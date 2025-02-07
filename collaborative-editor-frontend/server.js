@@ -9,14 +9,29 @@ const Document = require("./models/Document");
 const documentRoutes = require("./routes/documentRoutes");
 
 const app = express();
-app.use(cors());
+
+// CORS yapılandırmasını doğru şekilde yapıyoruz
+const allowedOrigins = [
+  'https://lastitproject.onrender.com',  // Render’daki frontend URL'nizi ekleyin
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+
 app.use(express.json());
 
 const server = http.createServer(app);
 
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("Successfully connected to MongoDB!"))
-    .catch((err) => console.error(" MongoDB connection error:", err));
+    .then(() => console.log("✅ Successfully connected to MongoDB!"))
+    .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 const io = new Server(server, {
     cors: {
@@ -24,7 +39,6 @@ const io = new Server(server, {
         methods: ["GET", "POST"]
     }
 });
-
 
 io.on("connection", (socket) => {
     console.log("🔗 New user connected:", socket.id);
@@ -61,7 +75,6 @@ io.on("connection", (socket) => {
         let document = await Document.findOne({ documentId });
     
         if (!document) {
-         
             document = await Document.create({
                 documentId,
                 changes: [newEdit], 
@@ -81,7 +94,6 @@ io.on("connection", (socket) => {
     
         socket.to(documentId).emit("update-document", document.content);
     });
-    
 });
 
 // API Routes
@@ -89,7 +101,7 @@ app.use("/documents", documentRoutes);
 
 // Start the Server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server is running: http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server is running on port ${PORT}`));
 
 app.get("/", (req, res) => {
     res.send("Collaborative Text Editor Backend is running!");
@@ -111,16 +123,15 @@ app.post("/save-document", async (req, res) => {
 
         res.status(200).json({ message: `Saved by ${username}!` });
     } catch (error) {
-        res.status(500).json({ error: " Error saving the document." });
+        res.status(500).json({ error: "Error saving the document." });
     }
 });
 
-// Clear Conversation History API
 app.delete("/clear-history", async (req, res) => {
     try {
         await Document.deleteMany({});
         res.status(200).json({ message: "Conversation history cleared!" });
     } catch (error) {
-        res.status(500).json({ error: " Error clearing history." });
+        res.status(500).json({ error: "Error clearing history." });
     }
 });
