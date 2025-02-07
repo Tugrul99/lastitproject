@@ -28,58 +28,65 @@ const io = new Server(server, {
     }
 });
 
+// WebSocket bağlantısı
 io.on("connection", (socket) => {
     console.log("🔗 New user connected:", socket.id);
 
+    // Kullanıcı bir dokümana katıldığında
     socket.on("join-document", async ({ documentId, username }) => {
         if (!username) {
             socket.emit("error", "Username is required!");
             return;
         }
 
-        socket.join(documentId);
+        socket.join(documentId); // Kullanıcıyı belirli bir dokümana bağla
         console.log(`📄 User (${username}) joined the document.`);
 
+        // Dokümanı bul ve içeriğini gönder
         const document = await Document.findOne({ documentId });
         if (document) {
-            socket.emit("load-document", document.content);
+            socket.emit("load-document", document.content); // Veriyi yolla
         } else {
+            // Doküman yoksa yeni bir doküman oluştur
             await Document.create({ documentId, content: "", changes: [] });
             socket.emit("load-document", "");
         }
     });
 
+    // Belirli bir doküman üzerinde değişiklik yapıldığında
     socket.on("edit-document", async ({ documentId, content, username }) => {
         if (!username || !content.trim()) return;
 
-        const timestamp = Date.now(); 
-    
+        const timestamp = Date.now();
+
         const newEdit = {
             username,
             content,
             timestamp
         };
-    
+
         let document = await Document.findOne({ documentId });
-    
+
+        // Eğer doküman mevcutsa, değişiklikleri ekleyin
         if (!document) {
             document = await Document.create({
                 documentId,
-                changes: [newEdit], 
+                changes: [newEdit],
                 content
             });
         } else {
             if (!document.changes) {
-                document.changes = []; 
+                document.changes = [];
             }
-    
+
             document.changes.push(newEdit);
-            document.changes.sort((a, b) => a.timestamp - b.timestamp); 
-            document.content = document.changes.map(edit => edit.content).join("\n"); 
-    
-            await document.save();
+            document.changes.sort((a, b) => a.timestamp - b.timestamp); // Zaman sırasına göre sırala
+            document.content = document.changes.map(edit => edit.content).join("\n");
+
+            await document.save(); // Değişiklikleri kaydet
         }
-    
+
+        // Diğer cihazları bu değişikliklerle güncelle
         socket.to(documentId).emit("update-document", document.content);
     });
 });
