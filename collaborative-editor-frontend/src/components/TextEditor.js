@@ -10,13 +10,11 @@ const TextEditor = () => {
   const [username, setUsername] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState("");
-  const [documentLoaded, setDocumentLoaded] = useState(false);
 
   useEffect(() => {
     const s = io(SERVER_URL);
     setSocket(s);
 
-    // Sunucuya bağlandığında, doğru dokümana katılma
     return () => {
       s.disconnect();
     };
