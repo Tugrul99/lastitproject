@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
 const DocumentSchema = new mongoose.Schema({
     documentId: String,
@@ -6,4 +6,4 @@ const DocumentSchema = new mongoose.Schema({
     lastModified: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model("Document", DocumentSchema);
+module.exports = mongoose.model('Document', DocumentSchema);

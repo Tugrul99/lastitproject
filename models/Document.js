@@ -1,9 +1,15 @@
-const mongoose = require("mongoose");
+// models/Document.js
+const mongoose = require('mongoose');
 
 const DocumentSchema = new mongoose.Schema({
-    documentId: String,
+  documentId: { type: String, required: true },
+  content: { type: String, default: "" },
+  changes: [{
+    username: String,
     content: String,
-    lastModified: { type: Date, default: Date.now }
+    timestamp: Number
+  }],
+  lastModified: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model("Document", DocumentSchema);
+module.exports = mongoose.model('Document', DocumentSchema);
