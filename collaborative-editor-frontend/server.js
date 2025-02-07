@@ -135,3 +135,13 @@ app.delete("/clear-history", async (req, res) => {
         res.status(500).json({ error: "Error clearing history." });
     }
 });
+
+const path = require('path');
+
+// Frontend build dosyalarını statik olarak sunuyoruz
+app.use(express.static(path.join(__dirname, 'collaborative-editor-frontend/build')));
+
+// Herhangi bir sayfaya erişim sağlandığında index.html dosyasını gönderiyoruz
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'collaborative-editor-frontend/build', 'index.html'));
+});
