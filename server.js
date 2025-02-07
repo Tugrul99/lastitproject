@@ -11,7 +11,23 @@ const documentRoutes = require('./routes/documentRoutes');
 
 const app = express();
 
-app.use(cors());
+// Frontend URL'ini allowedOrigins dizisinde tanımladık
+const allowedOrigins = [
+    'https://lastitproject.onrender.com',  // Render frontend URL'sini ekleyin
+    'https://your-frontend-service.onrender.com'  // Eğer başka bir frontend servisiniz varsa ekleyebilirsiniz
+];
+
+// CORS ayarlarını frontend URL'siyle uyumlu hale getirdik
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+
 app.use(express.json());
 
 const server = http.createServer(app);
@@ -23,7 +39,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 const io = new Server(server, {
     cors: {
-        origin: "*",
+        origin: "*",  // Tüm frontend bağlantılarına izin verir
         methods: ["GET", "POST"]
     }
 });
@@ -32,28 +48,24 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
     console.log("🔗 New user connected:", socket.id);
 
-    // Kullanıcı bir dokümana katıldığında
     socket.on("join-document", async ({ documentId, username }) => {
         if (!username) {
             socket.emit("error", "Username is required!");
             return;
         }
 
-        socket.join(documentId); // Kullanıcıyı belirli bir dokümana bağla
+        socket.join(documentId);  // Kullanıcıyı belirli bir dokümana bağla
         console.log(`📄 User (${username}) joined the document.`);
 
-        // Dokümanı bul ve içeriğini gönder
         const document = await Document.findOne({ documentId });
         if (document) {
-            socket.emit("load-document", document.content); // Veriyi yolla
+            socket.emit("load-document", document.content);  // Veriyi yolla
         } else {
-            // Doküman yoksa yeni bir doküman oluştur
             await Document.create({ documentId, content: "", changes: [] });
             socket.emit("load-document", "");
         }
     });
 
-    // Belirli bir doküman üzerinde değişiklik yapıldığında
     socket.on("edit-document", async ({ documentId, content, username }) => {
         if (!username || !content.trim()) return;
 
@@ -67,7 +79,6 @@ io.on("connection", (socket) => {
 
         let document = await Document.findOne({ documentId });
 
-        // Eğer doküman mevcutsa, değişiklikleri ekleyin
         if (!document) {
             document = await Document.create({
                 documentId,
@@ -80,14 +91,13 @@ io.on("connection", (socket) => {
             }
 
             document.changes.push(newEdit);
-            document.changes.sort((a, b) => a.timestamp - b.timestamp); // Zaman sırasına göre sırala
+            document.changes.sort((a, b) => a.timestamp - b.timestamp);  // Zaman sırasına göre sırala
             document.content = document.changes.map(edit => edit.content).join("\n");
 
-            await document.save(); // Değişiklikleri kaydet
+            await document.save();
         }
 
-        // Diğer cihazları bu değişikliklerle güncelle
-        socket.to(documentId).emit("update-document", document.content);
+        socket.to(documentId).emit("update-document", document.content);  // Diğer cihazları güncelle
     });
 });
 
