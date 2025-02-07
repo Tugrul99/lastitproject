@@ -1,0 +1,14 @@
+.App {
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+.editor-container {
+  width: 80%;
+  margin: 20px auto;
+  height: 500px;
+}
+
+.ql-container {
+  height: 400px !important;
+}
